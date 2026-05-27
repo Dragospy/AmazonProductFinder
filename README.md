@@ -1,50 +1,63 @@
 # Amazon Product Finder
-- Creator: Dragospy (aka W4TCH3R)
 
-# Why did I make this?
-Well, I realised my name is Dragos.py, and I had no python projects on here.
+A Python CLI tool that searches Amazon UK for products, sorts them by name, price, or rating, and lets you compare the technical specifications of two products side by side. Uses Selenium with `undetected-chromedriver` to handle Amazon's bot detection, and BeautifulSoup to parse the results.
 
-So I thought, what is something that really annoys me? And browsing amazon and comparing products on there was more or less top of the list.
-Therefore, I made<sup>*</sup> this.
+- Creator: Dragos Soalca (Dragospy / W4TCH3R)
 
-# Dependencies & Installation
-This was built using Python 3.12.8, but it should work with newer versions aswell. So use version 3.12.8 and up
+## Why I made this
 
-I recommend making a virtual environment when using this, though it is not necessary.
+My name is Dragos.py and I had no Python projects on my GitHub. So I picked something that actually annoys me — browsing Amazon and comparing products — and built a tool for it.
 
-1. Download the latest release of the **Amazon Product Search** from GitHub
+## Requirements
 
-2. There are only 3 dependecies so you can install them like this:
+- Python 3.12.8 or newer
+- Google Chrome installed (used by `undetected-chromedriver`)
+
+## Installation
+
+```bash
+git clone https://github.com/<your-username>/AmazonProductFinder.git
+cd AmazonProductFinder
+python -m venv .venv
+source .venv/bin/activate    # on Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 ```
-pip install bs4
-pip install selenium
-pip install undetected_chromedriver
-pip install setuptools
-```
 
-**Using pip is not necessary, just the easiest way in my opinion**
+## Usage
 
-
-# How to use it
-Simply run the following in your terminal (Inside the directory with the main.py file in it)
-```
+```bash
 python main.py
 ```
 
-## Search
-If you choose to search for a product, then you will get asked what you want to search for.
-Once you type that in, you will then get asked how you would like your items to be sorted.
+You'll get a prompt with three options:
 
-## Compare
-Allows you to compare the specs of two products.
+- **Search** — enter a query, then choose how to sort the first page of results (by rating, name, or price). Up to 10 results are returned.
+- **Compare** — pick two products from your last search; the tool fetches each product page and prints the technical specifications side by side.
+- **Exit** — closes the headless browser and quits.
 
-First, you select a product from the list of the previously searched products.
-Then you select a 2nd product to compare against the 1st one (cannot be the same product).
+## Project structure
 
-This will then list all of the technical details of the 1st product, and also the comparable details of the 2nd product.
+```
+AmazonProductFinder/
+├── main.py            # Entry point and main interactive loop
+├── search.py          # Search query handling, parsing, and sorting
+├── compare.py         # Side-by-side spec comparison logic
+├── product.py         # Product data model and parsing from HTML
+├── config.py          # Configuration (Amazon TLD, etc.)
+├── requirements.txt   # Runtime dependencies
+├── requirements-dev.txt
+└── tests/
+    └── test_sort.py   # Unit tests for sorting logic
+```
 
+## Running the tests
 
+```bash
+pip install -r requirements-dev.txt
+python -m pytest tests/ -v
+```
 
+## Notes
 
-
-**Refers to the fact that its still in the works...*
+- The tool currently scrapes `amazon.co.uk`. To target a different Amazon region, edit `link_end` in `config.py`.
+- Amazon actively changes its HTML and runs bot-detection. If parsing breaks, the selectors in `product.py` and `compare.py` are the first place to look.

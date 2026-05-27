@@ -2,78 +2,81 @@ from bs4 import BeautifulSoup
 from product import product, list_products
 from os import system
 
-attributes = ['rating', 'name', 'price'] #attributes of the product class
-link_end = 'co.uk'
+ATTRIBUTES = ['rating', 'name', 'price']  # valid attributes the user can sort by
 
-def swap(products, j) -> None:#simple swap of two elements in a list
-    temp = products[j + 1]
-    products[j + 1] = products[j]
-    products[j] = temp
 
-def sort_products(products: list[product], sortingType: str) -> None:#sorts the products in the order of the selected attribute
-    for i in range(len(products) - 1):
-        for j in range(len(products) - 1 - i):
-            
-            if sortingType == 'name' and getattr(products[j], sortingType) >= getattr(products[j + 1], sortingType):
-                swap(products, j)
-            
-            if sortingType == 'price' and float(getattr(products[j], sortingType)[1:]) >= float(getattr(products[j + 1], sortingType)[1:]) :
-                swap(products, j)
-                
-            if sortingType == 'rating' and float(getattr(products[j], sortingType)) <= float(getattr(products[j + 1], sortingType)):
-                swap(products, j)
-                
-def process_products(products, results) -> None: #Processes the HTML returned and created product objects using the product class
-    count = 0
-    
+def _price_key(p: product) -> float:
+    """Strip the currency symbol from a price string and return it as a float."""
+    return float(p.price[1:])
+
+
+def _rating_key(p: product) -> float:
+    return float(p.rating)
+
+
+def sort_products(products: list, sorting_type: str) -> list:
+    """Return a new list of products sorted by the given attribute.
+
+    Name and price sort ascending; rating sorts descending (best first).
+    """
+    if sorting_type == 'name':
+        return sorted(products, key=lambda p: p.name)
+    if sorting_type == 'price':
+        return sorted(products, key=_price_key)
+    if sorting_type == 'rating':
+        return sorted(products, key=_rating_key, reverse=True)
+    return list(products)
+
+
+def process_products(results) -> list:
+    """Build a list of up to 10 listable product objects from the parsed HTML results."""
+    products = []
     for item in results:
-        
-        if count >= 10:
+        if len(products) >= 10:
             break
-        
-        productVar = product(item)
-        
-        if getattr(productVar, "listable", None) == None:
-            continue
-        
-        count += 1
-        
-        products.append(productVar)
-        
-def sort_check(products) -> None:
-    while True: 
-        sortingType = input("How would you like to sort it? \n| Rating | Name | Price\n").lower()
-                
-        if not sortingType in attributes:
-            print("Not a valid attribute!") 
-        
-        sort_products(products, sortingType)    
-        
-        break
-    
 
-def search_products(driver, search_query):#takes the processed user query and gets every search result on the first page, then lists every item found
-    url = f'https://www.amazon.{link_end}/s?k={search_query}'
-    
-    driver.get(url)
-    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    
+        product_var = product(item)
+        if getattr(product_var, "listable", None) is None:
+            continue
+
+        products.append(product_var)
+    return products
+
+
+def sort_check(products: list) -> list:
+    while True:
+        sorting_type = input("How would you like to sort it? \n| Rating | Name | Price\n").lower()
+        if sorting_type not in ATTRIBUTES:
+            print("Not a valid attribute!")
+            continue
+        return sort_products(products, sorting_type)
+
+
+def search_products(driver, search_query: str):
+    """Search Amazon for the given query and return the first page of listable products."""
+    url = f'https://www.amazon.co.uk/s?k={search_query}'
+
+    try:
+        driver.get(url)
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+    except Exception as e:
+        print(f"Failed to load Amazon search page: {e}")
+        return []
+
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-    
     results = soup.find_all("div", {'data-component-type': 's-search-result'})
-    
+
     if not results:
         print("Failed to fetch product details, please try again later")
-        return
-    
-    products = []
-    
-    process_products(products, results)
-        
-    sort_check(products)
-            
+        return []
+
+    products = process_products(results)
+    if not products:
+        print("No listable products found for this search.")
+        return []
+
+    products = sort_check(products)
+
     system("clear||cls")
-    
     list_products(products)
-    
     return products
